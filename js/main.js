@@ -174,6 +174,46 @@
     });
   }
 
+  /* ---------------- Fixed-style parallax backgrounds (hero + gallery) ----------------
+     Native `background-attachment: fixed` is unreliable/janky on most mobile
+     browsers, so the "stays in place" effect is done with a scroll-driven
+     transform instead — this behaves the same on mobile and desktop. */
+  var parallaxLayers = [];
+  document.querySelectorAll('.hero-bg-image').forEach(function (el) {
+    parallaxLayers.push({ el: el, container: el.closest('#hero'), speed: 0.2, maxOffsetRatio: 0.07 });
+  });
+  document.querySelectorAll('.parallax-bg').forEach(function (el) {
+    parallaxLayers.push({ el: el, container: el.closest('.parallax-block'), speed: 0.25, maxOffsetRatio: 0.09 });
+  });
+
+  if (parallaxLayers.length && !prefersReducedMotion) {
+    var parallaxTicking = false;
+
+    function applyParallax() {
+      var vh = window.innerHeight;
+      parallaxLayers.forEach(function (layer) {
+        var rect = layer.container.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > vh) return;
+        var delta = (rect.top + rect.height / 2) - vh / 2;
+        var maxOffset = rect.height * layer.maxOffsetRatio;
+        var offset = Math.max(-maxOffset, Math.min(maxOffset, -delta * layer.speed));
+        layer.el.style.transform = 'translate3d(0,' + offset.toFixed(1) + 'px,0)';
+      });
+      parallaxTicking = false;
+    }
+
+    function requestParallax() {
+      if (!parallaxTicking) {
+        requestAnimationFrame(applyParallax);
+        parallaxTicking = true;
+      }
+    }
+
+    applyParallax();
+    window.addEventListener('scroll', requestParallax, { passive: true });
+    window.addEventListener('resize', requestParallax, { passive: true });
+  }
+
   /* ---------------- Contact form -> WhatsApp ---------------- */
   var form = document.getElementById('contact-form');
   if (form) {
